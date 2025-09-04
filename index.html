@@ -749,7 +749,7 @@ function hookCalendario(){
 
   const gapiInit = async () => {
     try{
-      await gapi.load("client");
+      await new Promise(resolve => gapi.load('client', resolve));
       await gapi.client.init({
         apiKey: GOOGLE_API_KEY,
         discoveryDocs: [GOOGLE_DISCOVERY]
