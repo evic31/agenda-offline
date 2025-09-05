@@ -231,13 +231,7 @@ function layoutLaboral(){
          <select name="shape"><option value="PIDO">Dolors</option><option value="HAGO">Edu</option></select>
         <button class="cta">Añadir</button>
       </form>
-      <div style="overflow:auto;margin-top:8px">
-        <table class="table" id="tblIncome">
-          <thead><tr><th>Mes</th><th style="text-align:right">Importe</th><th></th></tr></thead>
-          <tbody>${rowsInc}</tbody>
-          <tfoot><tr><th>Total</th><th style="text-align:right">${totalInc.toFixed(2)} €</th><th></th></tr></tfoot>
-        </table>
-      </div>
+      <div class="list" id="listLaboral">${htmlItems || `<div class="muted">Aún no hay tareas.</div>`}</div>
     </div>
   </section>`;
 }
