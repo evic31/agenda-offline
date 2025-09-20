@@ -63,6 +63,16 @@
   .save-badge{font-size:12px; color:var(--muted)}
   .cal-legend{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:999px; padding:2px 8px}
   .cal-dot{width:10px; height:10px; border-radius:50%}
+
+/* Sesiones Máster: checklist */
+.sess-card h3{margin:0 0 8px}
+.sess-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.sess-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+.sess-item.done{opacity:.65;text-decoration:line-through}
+.sess-head{display:flex;align-items:center;gap:8px}
+.sess-head .pill{margin-left:6px}
+.sess-actions{display:flex;gap:8px;margin-top:6px}
+
 </style>
 </head>
 <body data-theme="dark">
@@ -268,7 +278,38 @@ function layoutMaster(){
       <textarea id="masterNotes" rows="10" placeholder="Ideas, guiones de vídeo, checklist de citas…"></textarea>
       <div class="save-badge" id="saveMasterNotes"></div>
     </div>
-  </section>`;
+  
+    <div class="card sess-card" style="grid-column:1 / -1">
+      <h2>📚 Sesiones del cronograma</h2>
+      <p class="muted">Marca las sesiones vistas. Formato: <code>XXMDGE - Sesión N - Tema N</code>. Se guarda automáticamente.</p>
+      <div class="grid grid-3">
+        <div>
+          <div class="sess-head"><h3>04MDGE</h3><span class="pill"><span id="cnt_04">0</span>/13</span></div>
+          <div class="sess-actions">
+            <button class="mini" data-bulk="04_all">Marcar todo</button>
+            <button class="mini" data-bulk="04_none">Desmarcar todo</button>
+          </div>
+          <div class="sess-list" id="list_04"></div>
+        </div>
+        <div>
+          <div class="sess-head"><h3>05MDGE</h3><span class="pill"><span id="cnt_05">0</span>/18</span></div>
+          <div class="sess-actions">
+            <button class="mini" data-bulk="05_all">Marcar todo</button>
+            <button class="mini" data-bulk="05_none">Desmarcar todo</button>
+          </div>
+          <div class="sess-list" id="list_05"></div>
+        </div>
+        <div>
+          <div class="sess-head"><h3>06MDGE</h3><span class="pill"><span id="cnt_06">0</span>/13</span></div>
+          <div class="sess-actions">
+            <button class="mini" data-bulk="06_all">Marcar todo</button>
+            <button class="mini" data-bulk="06_none">Desmarcar todo</button>
+          </div>
+          <div class="sess-list" id="list_06"></div>
+        </div>
+      </div>
+    </div>
+</section>`;
 }
 
 function layoutIngles(){
@@ -550,6 +591,22 @@ function hookLaboral(){
 }
 
 function hookMaster(){
+
+  data.master ||= {deliveries:[], resources:[], notes:""}; save();
+  data.master.sessions ||= {}; save();
+  const SESS_CONF = { "04": 13, "05": 18, "06": 13 };
+  const mountList = (code) => {
+    const total = SESS_CONF[code];
+    const cont = document.getElementById("list_"+code);
+    if(!cont) return;
+    let done = 0;
+    cont.innerHTML = Array.from({length: total}, (_,i)=>{
+      const n=i+1; const id = `${code}MDGE-S${n}`; const ok = !!data.master.sessions[id]; if(ok) done++;
+      return `<label class="sess-item ${ok?'done':''}"><input type="checkbox" data-sid="${id}" ${ok?'checked':''}> <span><strong>${code}MDGE</strong> - Sesión ${n} - Tema ${n}</span></label>`;
+    }).join("");
+    const cnt = document.getElementById("cnt_"+code); if(cnt) cnt.textContent = String(done);
+  };
+
   data.master ||= {deliveries:[], resources:[], notes:""}; save();
 
   $("#formMaster").addEventListener("submit", e=>{
@@ -579,6 +636,23 @@ function hookMaster(){
 
   $("#masterNotes").value=data.master.notes||"";
   $("#masterNotes").addEventListener("input", e=>{ data.master.notes=e.target.value; save(); showSaved($("#saveMasterNotes")); });
+
+  ["04","05","06"].forEach(mountList);
+  const masterRoot = document.querySelector("[data-route='master']");
+  if(masterRoot){
+    masterRoot.addEventListener("change", (e)=>{
+      const sid = e.target?.dataset?.sid; if(!sid) return;
+      data.master.sessions[sid] = e.target.checked; save();
+      const label = e.target.closest(".sess-item"); if(label) label.classList.toggle("done", e.target.checked);
+      const code = sid.slice(0,2); mountList(code);
+    });
+    masterRoot.addEventListener("click", (e)=>{
+      const bulk = e.target?.dataset?.bulk; if(!bulk) return;
+      const [code,act] = bulk.split("_"); const total = SESS_CONF[code];
+      for(let i=1;i<=total;i++){ const id = `${code}MDGE-S${i}`; data.master.sessions[id] = (act==="all"); }
+      save(); mountList(code);
+    });
+  }
 }
 
 function hookIngles(){
